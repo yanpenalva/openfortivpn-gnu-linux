@@ -1,11 +1,8 @@
 host = YOUR_HOST
-
 port = YOUR_PORT
 
-username = YOUR_USER
-
+username = YOUR_USERNAME
 password = YOUR_PASSWORD
 
 set-dns = 1
-
 pppd-use-peerdns = 1

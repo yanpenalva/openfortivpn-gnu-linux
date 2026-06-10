@@ -1,65 +1,213 @@
-## Openfortivpn GNU/Linux
-Script to access VPN via openfortivpn on GNU/Linux
+# OpenFortiVPN GNU/Linux
 
+Scripts and documentation to connect to Fortinet SSL VPN on GNU/Linux using OpenFortiVPN.
 
-##### Ubuntu and derivatives
+This repository supports two modes:
 
-```shell
-# Installl 'openfortivpn'
-sudo apt install openfortivpn
+* SAML authentication
+* Legacy username/password authentication
+
+## Configuration
+
+Before using any script, replace the placeholder values below with your VPN information:
+
+```text
+YOUR_VPN_HOST
+YOUR_VPN_PORT
 ```
 
-## Setup openfortivpn(example).
+Example:
 
-1. Create a folder called `openfortivpn` in the `~/Development` folder. 
+```text
+YOUR_VPN_HOST = vpn.company.com
+YOUR_VPN_PORT = 443
+```
 
-2. Add the `start-fortclientvpn.sh` and `openfortivpn-config` files to the `openfortivpn` folder.
+The following files may contain placeholders that must be updated before use:
 
-3. Enter your user and password in the `openfortivpn-config` file. Example:
+```text
+scripts/vpn-saml
+scripts/vpn-doctor
+examples/openfortivpn-config.example
+```
 
-> ```
-> username = user
-> password = passwd
-> ```
+Search for:
 
-4. Create an alias to start running it via terminal with the `vpn-linux` command.
+```text
+YOUR_VPN_HOST
+YOUR_VPN_PORT
+```
 
-> 4.1. Go to the .zshrc file (if you use ZSH as your terminal) or the .bashrc file (if you use Bash as your terminal).
-> 
-> ##### ZSH
-> ```shell
-> nano ~/.zshrc
-> ```
-> 
-> ##### Bash
-> ```shell
-> nano ~/.bashrc
-> ```
-> 
-> 4.2. After accessing the file, create an alias by adding the line below to the end of the file
-> 
-> ```shell
-> alias vpn-linux="sh ~/Development/openfortivpn/start-fortclientvpn.sh"
-> ```
-> 
-> Then run the command below to apply change:
-> 
-> ##### ZSH
-> ```shell
-> source ~/.zshrc
-> ```
-> 
-> ##### Bash
-> ```shell
-> source ~/.bashrc
-> ```
-<br>
-5. Now just run the `vpn-linux` command in the terminal and the connection will start.
-<br>
-<br>
-6. In some cases, it is necessary to remove the following lines:
+and replace them with the values provided by your organization.
 
-> ```shell
-> set-dns = 1
->pppd-use-peerdns = 1
-> ```
+Example:
+
+```bash
+VPN_HOST="vpn.company.com"
+VPN_PORT="443"
+```
+
+Failure to replace these values will prevent the VPN connection from working correctly.
+
+## Recommended mode: SAML
+
+Use this mode when your VPN uses browser-based authentication, Microsoft Entra ID, Azure AD, Okta, Google Workspace, or another SAML provider.
+
+### Requirement
+
+SAML requires OpenFortiVPN `1.24.1` or newer.
+
+Check your version:
+
+```bash
+openfortivpn --version
+```
+
+Check SAML support:
+
+```bash
+openfortivpn --help | grep -i saml
+```
+
+If no SAML option is shown, install a newer version.
+
+### Usage
+
+```bash
+./scripts/vpn-saml
+```
+
+Expected gateway format:
+
+```text
+YOUR_VPN_HOST:YOUR_VPN_PORT
+```
+
+Example:
+
+```text
+vpn.company.com:443
+```
+
+To override without editing the script:
+
+```bash
+VPN_HOST="vpn.company.com" VPN_PORT="443" ./scripts/vpn-saml
+```
+
+## Legacy mode
+
+Use this mode only when your VPN uses direct username/password authentication.
+
+Copy the example config:
+
+```bash
+cp examples/openfortivpn-config.example openfortivpn-config
+```
+
+Edit:
+
+```bash
+nano openfortivpn-config
+```
+
+Replace:
+
+```text
+YOUR_VPN_HOST
+YOUR_VPN_PORT
+YOUR_USERNAME
+YOUR_PASSWORD
+```
+
+Run:
+
+```bash
+OPENFORTIVPN_CONFIG="./openfortivpn-config" ./scripts/vpn-legacy
+```
+
+## Doctor
+
+Run environment checks:
+
+```bash
+./scripts/vpn-doctor
+```
+
+It checks:
+
+* OpenFortiVPN installation
+* SAML support
+* DNS resolution
+* HTTPS connectivity
+* Required system commands
+
+Before running it, make sure `YOUR_VPN_HOST` and `YOUR_VPN_PORT` were replaced inside `scripts/vpn-doctor`, or override them:
+
+```bash
+VPN_HOST="vpn.company.com" VPN_PORT="443" ./scripts/vpn-doctor
+```
+
+## Install scripts globally
+
+Optional:
+
+```bash
+mkdir -p ~/.local/bin
+
+cp scripts/vpn-saml ~/.local/bin/vpn-saml
+cp scripts/vpn-legacy ~/.local/bin/vpn-legacy
+cp scripts/vpn-doctor ~/.local/bin/vpn-doctor
+
+chmod +x ~/.local/bin/vpn-saml ~/.local/bin/vpn-legacy ~/.local/bin/vpn-doctor
+```
+
+Make sure `~/.local/bin` is in your `PATH`.
+
+For ZSH:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+For Bash:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Then use:
+
+```bash
+vpn-saml
+```
+
+or:
+
+```bash
+vpn-legacy
+```
+
+or:
+
+```bash
+vpn-doctor
+```
+
+## Notes
+
+Ubuntu 22.04 and Pop!_OS 22.04 usually provide an old OpenFortiVPN version through `apt`.
+
+That version may not support SAML.
+
+If SAML is required, install OpenFortiVPN `1.24.1` or newer from source.
+
+## Security
+
+Prefer SAML authentication when available.
+
+Avoid storing passwords in plain text.
+
+Never commit real VPN configuration files, credentials, tokens, internal hosts, or private certificates.

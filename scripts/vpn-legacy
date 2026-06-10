@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CONFIG_PATH="${OPENFORTIVPN_CONFIG:-./openfortivpn-config}"
+OPENFORTIVPN_BIN="${OPENFORTIVPN_BIN:-openfortivpn}"
+
+if ! command -v "$OPENFORTIVPN_BIN" >/dev/null 2>&1; then
+  echo "Required command not found: $OPENFORTIVPN_BIN"
+  exit 1
+fi
+
+if [[ ! -f "$CONFIG_PATH" ]]; then
+  echo "Config file not found: $CONFIG_PATH"
+  echo "Set OPENFORTIVPN_CONFIG or run from the config directory."
+  exit 1
+fi
+
+if grep -qE "YOUR_VPN_HOST|YOUR_VPN_PORT|YOUR_USERNAME|YOUR_PASSWORD" "$CONFIG_PATH"; then
+  echo "Config file contains placeholder values."
+  echo "Edit $CONFIG_PATH before connecting."
+  exit 1
+fi
+
+if [[ "$(stat -c "%a" "$CONFIG_PATH")" != "600" ]]; then
+  echo "Warning: config file permissions are not restricted."
+  echo "Recommended: chmod 600 $CONFIG_PATH"
+  echo
+fi
+
+echo "Client: $("$OPENFORTIVPN_BIN" --version | head -n 1)"
+echo "Config: $CONFIG_PATH"
+echo "Authentication: legacy username/password"
+echo
+
+sudo "$OPENFORTIVPN_BIN" -c "$CONFIG_PATH" "$@"

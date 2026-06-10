@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+VPN_HOST="${VPN_HOST:-YOUR_VPN_HOST}"
+VPN_PORT="${VPN_PORT:-443}"
+OPENFORTIVPN_BIN="${OPENFORTIVPN_BIN:-openfortivpn}"
+
+FAILED=0
+
+pass() {
+  echo "✓ $1"
+}
+
+fail() {
+  echo "✗ $1"
+  FAILED=1
+}
+
+check_command() {
+  local command="$1"
+
+  if command -v "$command" >/dev/null 2>&1; then
+    pass "$command found"
+  else
+    fail "$command not found"
+  fi
+}
+
+check_vpn_config() {
+  if [[ "$VPN_HOST" == "YOUR_VPN_HOST" || -z "$VPN_HOST" ]]; then
+    fail "VPN_HOST is not configured"
+    echo "  Set VPN_HOST or replace YOUR_VPN_HOST in the script."
+    return
+  fi
+
+  if [[ "$VPN_PORT" == "YOUR_VPN_PORT" || -z "$VPN_PORT" ]]; then
+    fail "VPN_PORT is not configured"
+    echo "  Set VPN_PORT or replace YOUR_VPN_PORT in the script."
+    return
+  fi
+
+  pass "VPN target configured as ${VPN_HOST}:${VPN_PORT}"
+}
+
+check_openfortivpn() {
+  if ! command -v "$OPENFORTIVPN_BIN" >/dev/null 2>&1; then
+    fail "$OPENFORTIVPN_BIN not found"
+    return
+  fi
+
+  pass "$OPENFORTIVPN_BIN found"
+
+  local version
+  version="$("$OPENFORTIVPN_BIN" --version | head -n 1)"
+
+  echo "$version"
+
+  if "$OPENFORTIVPN_BIN" --help | grep -qi saml; then
+    pass "SAML support detected"
+  else
+    fail "SAML support not detected"
+  fi
+}
+
+check_dns() {
+  if [[ "$VPN_HOST" == "YOUR_VPN_HOST" || -z "$VPN_HOST" ]]; then
+    fail "DNS check skipped because VPN_HOST is not configured"
+    return
+  fi
+
+  local resolved_ips
+  resolved_ips="$(dig +short "$VPN_HOST" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || true)"
+
+  if [[ -n "$resolved_ips" ]]; then
+    pass "DNS resolution works for $VPN_HOST"
+    echo "$resolved_ips"
+  else
+    fail "DNS resolution failed for $VPN_HOST"
+  fi
+}
+
+check_https() {
+  if [[ "$VPN_HOST" == "YOUR_VPN_HOST" || -z "$VPN_HOST" ]]; then
+    fail "HTTPS check skipped because VPN_HOST is not configured"
+    return
+  fi
+
+  if curl -ks --connect-timeout 5 "https://${VPN_HOST}:${VPN_PORT}" >/dev/null; then
+    pass "HTTPS connection works for ${VPN_HOST}:${VPN_PORT}"
+  else
+    fail "HTTPS connection failed for ${VPN_HOST}:${VPN_PORT}"
+  fi
+}
+
+check_command openssl
+check_command pppd
+check_command dig
+check_command curl
+
+echo
+check_vpn_config
+
+echo
+check_openfortivpn
+
+echo
+check_dns
+
+echo
+check_https
+
+echo
+
+if [[ "$FAILED" -eq 0 ]]; then
+  pass "All checks passed"
+else
+  fail "Some checks failed"
+fi
+
+exit "$FAILED"
