@@ -95,6 +95,18 @@ To override without editing the script:
 VPN_HOST="vpn.company.com" VPN_PORT="443" ./scripts/vpn-saml
 ```
 
+To pin the VPN gateway certificate fingerprint:
+
+```bash
+OPENFORTIVPN_TRUSTED_CERT="SHA256_FINGERPRINT" ./scripts/vpn-saml
+```
+
+You can combine it with host and port overrides:
+
+```bash
+VPN_HOST="vpn.company.com" VPN_PORT="443" OPENFORTIVPN_TRUSTED_CERT="SHA256_FINGERPRINT" ./scripts/vpn-saml
+```
+
 ## Legacy mode
 
 Use this mode only when your VPN uses direct username/password authentication.
@@ -178,23 +190,7 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-Then use:
-
-```bash
-vpn-saml
-```
-
-or:
-
-```bash
-vpn-legacy
-```
-
-or:
-
-```bash
-vpn-doctor
-```
+Then use `vpn-saml`, `vpn-legacy`, or `vpn-doctor`.
 
 ## Notes
 

@@ -50,6 +50,18 @@ Or directly:
 sudo openfortivpn <YOUR_VPN_HOST>:<YOUR_VPN_PORT> --saml-login
 ```
 
+To pin the VPN gateway certificate fingerprint with the helper script:
+
+```bash
+OPENFORTIVPN_TRUSTED_CERT="SHA256_FINGERPRINT" vpn-saml
+```
+
+Or directly:
+
+```bash
+sudo openfortivpn <YOUR_VPN_HOST>:<YOUR_VPN_PORT> --saml-login --trusted-cert SHA256_FINGERPRINT
+```
+
 ---
 
 ## Authentication Flow

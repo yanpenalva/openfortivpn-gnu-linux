@@ -5,6 +5,8 @@ set -euo pipefail
 VPN_HOST="${VPN_HOST:-<YOUR_VPN_HOST>}"
 VPN_PORT="${VPN_PORT:-443}"
 OPENFORTIVPN_BIN="${OPENFORTIVPN_BIN:-openfortivpn}"
+OPENFORTIVPN_TRUSTED_CERT="${OPENFORTIVPN_TRUSTED_CERT:-}"
+OPENFORTIVPN_SAML_BROWSER="${OPENFORTIVPN_SAML_BROWSER:-}"
 
 require_command() {
   local command="$1"
@@ -17,6 +19,9 @@ require_command() {
 
 require_command sudo
 require_command "$OPENFORTIVPN_BIN"
+if [[ -n "$OPENFORTIVPN_SAML_BROWSER" ]]; then
+  require_command "$OPENFORTIVPN_SAML_BROWSER"
+fi
 
 version="$("$OPENFORTIVPN_BIN" --version | head -n 1)"
 
@@ -29,6 +34,23 @@ fi
 echo "Client: $version"
 echo "Gateway: ${VPN_HOST}:${VPN_PORT}"
 echo "Authentication: SAML"
+if [[ -n "$OPENFORTIVPN_TRUSTED_CERT" ]]; then
+  echo "Certificate pinning: enabled"
+fi
+if [[ -n "$OPENFORTIVPN_SAML_BROWSER" ]]; then
+  echo "SAML browser: $OPENFORTIVPN_SAML_BROWSER"
+fi
 echo
 
-sudo "$OPENFORTIVPN_BIN" "${VPN_HOST}:${VPN_PORT}" --saml-login
+openfortivpn_args=("${VPN_HOST}:${VPN_PORT}" --saml-login)
+
+if [[ -n "$OPENFORTIVPN_TRUSTED_CERT" ]]; then
+  openfortivpn_args+=(--trusted-cert "$OPENFORTIVPN_TRUSTED_CERT")
+fi
+
+if [[ -n "$OPENFORTIVPN_SAML_BROWSER" ]]; then
+  export BROWSER="$OPENFORTIVPN_SAML_BROWSER"
+  sudo /usr/bin/env "BROWSER=$BROWSER" "PATH=$PATH" "$OPENFORTIVPN_BIN" "${openfortivpn_args[@]}"
+else
+  sudo "$OPENFORTIVPN_BIN" "${openfortivpn_args[@]}"
+fi
